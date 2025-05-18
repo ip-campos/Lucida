@@ -5,8 +5,10 @@ import pandas as pd
 from pathlib import Path
 import easygui
 from tqdm import tqdm
+import os
 
 # ---------------------------- Funcoes de filtro ---------------------------- #
+
 
 def filtro_linha_base(lista_intensidade_centros, intensidade_media, tolerancia=0.1):
     """Filtra indices de particulas cuja media de intensidade esta proxima da media global."""
@@ -15,12 +17,14 @@ def filtro_linha_base(lista_intensidade_centros, intensidade_media, tolerancia=0
         if abs(np.mean(centro) - intensidade_media) / intensidade_media < tolerancia
     ]
 
-def filtro_n_vezes(lista_intensidade_centros, indices, limiar, n_vezes=5):
+
+def filtro_n_vezes(lista_intensidade_centros, limiar, n_vezes=5):
     """Filtra indices de particulas que ultrapassam o limiar mais que n vezes."""
     return [
-        i for i in indices
+        i for i, centro in enumerate(lista_intensidade_centros)
         if sum(valor > limiar for valor in lista_intensidade_centros[i]) > n_vezes
     ]
+
 
 def filtro_std(lista_intensidade_centros, indices, limite_superior):
     """Filtra indices de particulas com desvio padrao abaixo de um limite."""
@@ -28,6 +32,7 @@ def filtro_std(lista_intensidade_centros, indices, limite_superior):
         i for i in indices
         if np.std(lista_intensidade_centros[i]) < limite_superior
     ]
+
 
 def media_inten_adjacente(x, y, frame_array, n_vizinhos=8):
     """
@@ -44,8 +49,8 @@ def media_inten_adjacente(x, y, frame_array, n_vizinhos=8):
     """
     # Coordenadas relativas dos 8 vizinhos (sentido horário)
     offsets = [(0, 1), (0, -1), (1, 0),
-               ( -1, 0), ( 1, 1), ( 1, -1),
-               ( -1, 1), ( -1, -1)]
+               (-1, 0), (1, 1), (1, -1),
+               (-1, 1), (-1, -1)]
 
     h, w = frame_array.shape
     intensidades = []
@@ -66,53 +71,56 @@ def media_inten_adjacente(x, y, frame_array, n_vizinhos=8):
 
     return np.mean(intensidades)
 
-# ------------------------- Leitura dos arquivos --------------------------- #
-path_tiff = Path(easygui.fileopenbox("Escolha o arquivo analisado"))
-output_dir = path_tiff.parent
-# Escolha do arquivo TIFF
-imagem = Image.open(path_tiff)
-n_frames = imagem.n_frames
-fps = 1/0.04
-tempo_medida = [i / fps for i in range(n_frames)]
 
-# Carrega o CSV com as coordenadas das particulas
-path_centros = output_dir / "centros.csv"
-centros = pd.read_csv(path_centros)
+def analisar_intermitencia(path_arquivo):
+    # ------------------------- Leitura dos arquivos --------------------------- #
+    path_tiff = Path(path_arquivo)
+    output_dir = path_tiff.parent
+    # Escolha do arquivo TIFF
+    imagem = Image.open(path_tiff)
+    n_frames = imagem.n_frames
+    fps = 1/0.04
+    tempo_medida = [i / fps for i in range(n_frames)]
 
-# Inicializa estrutura para armazenar intensidades por particula
-intensidade_por_particula = [[] for _ in range(len(centros))]
+    # Carrega o CSV com as coordenadas das particulas
+    path_centros = output_dir / "centros.csv"
+    centros = pd.read_csv(path_centros)
 
-# ----------------------- Extracao de intensidades -------------------------- #
+    # Inicializa estrutura para armazenar intensidades por particula
+    intensidade_por_particula = [[] for _ in range(len(centros))]
 
-for frame_index in tqdm(range(n_frames), desc="Processando frames"):
-    imagem.seek(frame_index)
-    frame_array = np.array(imagem)
+    # ----------------------- Extracao de intensidades -------------------------- #
 
-    for idx, (x, y) in enumerate(zip(centros["X"], centros["Y"])):
-        intensidade = media_inten_adjacente(x, y, frame_array, 4)
-        intensidade_por_particula[idx].append(intensidade)
+    for frame_index in tqdm(range(n_frames), desc="Processando frames"):
+        imagem.seek(frame_index)
+        frame_array = np.array(imagem)
 
-# ------------------------ Aplicacao de filtros ---------------------------- #
+        for idx, (x, y) in enumerate(zip(centros["X"], centros["Y"])):
+            intensidade = media_inten_adjacente(x, y, frame_array)
+            intensidade_por_particula[idx].append(intensidade)
 
-media_geral = centros["Intensidade media"][0]
-limiar = centros["limiar"][0]
+    # ------------------------ Aplicacao de filtros ---------------------------- #
 
-indices_filtrados = filtro_linha_base(intensidade_por_particula, media_geral, tolerancia=0.1)
-indices_filtrados = filtro_n_vezes(intensidade_por_particula, indices_filtrados, limiar, n_vezes=5)
+    media_geral = centros["Intensidade media"][0]
+    limiar = centros["limiar"][0]
 
+    indices_filtrados = filtro_linha_base(
+        intensidade_por_particula, media_geral, tolerancia=0.1)
+    indices_filtrados = filtro_n_vezes(
+        intensidade_por_particula, limiar, n_vezes=5)
 
-# ---------------------------- Salvar graficos ------------------------------ #
-output_dir.mkdir(parents=True, exist_ok=True)
+    # ---------------------------- Salvar graficos ------------------------------ #
+    output_dir.mkdir(parents=True, exist_ok=True)
 
-for count, idx in enumerate(indices_filtrados):
-    intensidade = intensidade_por_particula[idx]
-    x = centros.loc[idx, "X"]
-    y = centros.loc[idx, "Y"]
+    for count, idx in enumerate(indices_filtrados):
+        intensidade = intensidade_por_particula[idx]
+        x = centros.loc[idx, "X"]
+        y = centros.loc[idx, "Y"]
 
-    fig, ax = plt.subplots()
-    ax.plot(tempo_medida, intensidade, linewidth=1)
-    ax.set_title(f"Particula {count} - Coord: ({x}, {y})")
-    ax.set_xlabel("Tempo (s)")
-    ax.set_ylabel("Intensidade")
-    fig.savefig(output_dir / f"particula{count}-x{x}-y{y}.png")
-    plt.close(fig)
+        fig, ax = plt.subplots()
+        ax.plot(tempo_medida, intensidade, linewidth=1)
+        ax.set_title(f"Particula {count} - Coord: ({x}, {y})")
+        ax.set_xlabel("Tempo (s)")
+        ax.set_ylabel("Intensidade")
+        fig.savefig(output_dir / f"particula{count}-x{x}-y{y}.png")
+        plt.close(fig)
