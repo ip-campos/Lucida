@@ -51,4 +51,4 @@ This project is licensed under the MIT License. Feel free to use, modify, and sh
 
 ---
 
-**Lucida** — shedding light on the invisible.
+**Lucida** — A tool for single molecule intermittency analysis
