@@ -1,29 +1,11 @@
 from PIL import Image
 import numpy as np
 from matplotlib import pyplot as plt
-from matplotlib import animation
 import cv2
 import pandas as pd
 from tqdm import tqdm
 from pathlib import Path
-import os
-import easygui
-
-
-def adjacente(ponto1, ponto2, raio=1):
-    i, j = ponto1
-    i2, j2 = ponto2
-    return max(abs(i - i2), abs(j - j2)) <= raio
-
-
-def remover_adjacentes(lista_centros, raio=1):
-    """Remove elementos adjacentes de uma lista de coordenadas."""
-    filtrados = []
-    for centro in tqdm(range(len(lista_centros)), desc="Removendo adjacentes"):
-        if not any(adjacente(lista_centros[centro], c, raio) for c in filtrados):
-            filtrados.append(lista_centros[centro])
-    return filtrados
-
+from utils import *
 
 def identificar_particulas(path_arquivo):
     # Abre o arquivo TIFF
@@ -69,7 +51,7 @@ def identificar_particulas(path_arquivo):
             centros.append(key)
 
     # Remove centros adjacentes
-    # centros = np.array(remover_adjacentes(centros, raio=1))
+    centros = np.array(remover_adjacentes(centros, raio=1))
 
     # Salva os centros
     output_dir = path_imagem.parent
