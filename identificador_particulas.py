@@ -5,6 +5,7 @@ import cv2
 import pandas as pd
 from tqdm import tqdm
 from pathlib import Path
+from utils import *
 
 def identificar_particulas(path_arquivo):
     # Abre o arquivo TIFF
@@ -50,7 +51,7 @@ def identificar_particulas(path_arquivo):
             centros.append(key)
 
     # Remove centros adjacentes
-    # centros = np.array(remover_adjacentes(centros, raio=1))
+    centros = np.array(remover_adjacentes(centros, raio=1))
 
     # Salva os centros
     output_dir = path_imagem.parent

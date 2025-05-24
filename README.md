@@ -1,14 +1,24 @@
 # Lucida
 
-Lucida is a tool for analyzing microscopy videos, focusing on particle detection and their blinking behavior. This project aims to support researchers working with fluorescence microscopy data, especially in single-molecule experiments.
+Lucida is a tool for analyzing fluorescence microscopy videos, with a focus on detecting particles and studying their blinking behavior over time. It is designed to help researchers process sequences of TIFF images and extract useful information about fluorescent particle dynamics.
 
 ## Features
 
-- Automatic particle detection in TIFF videos.
-- Calculation of particle center coordinates with adjacent filtering.
-- Temporal analysis of fluorescence intensity for each particle.
-- Generation of intensity vs. time plots for selected particles.
-- Customizable filtering based on mean intensity, standard deviation, and threshold-crossing events.
+- Detects bright particles in microscopy TIFF videos.
+- Filters out adjacent or redundant detections.
+- Measures the temporal intensity variation of each detected particle.
+- Applies statistical filters to select relevant particles.
+- Saves CSV and PNG outputs for further analysis or publication.
+
+## Folder Structure
+
+```
+Lucida/
+├── main.py
+├── identificador_particulas.py
+├── utils.py
+├── analise_intermitencia.py
+```
 
 ## Requirements
 
@@ -19,10 +29,10 @@ Lucida is a tool for analyzing microscopy videos, focusing on particle detection
   - `Pillow`
   - `matplotlib`
   - `opencv-python`
-  - `easygui`
   - `tqdm`
+  - `easygui`
 
-You can install the required packages with:
+Install all dependencies using pip:
 
 ```bash
 pip install numpy pandas Pillow matplotlib opencv-python easygui tqdm
@@ -30,24 +40,27 @@ pip install numpy pandas Pillow matplotlib opencv-python easygui tqdm
 
 ## How to Use
 
-1. Run the script `identificador_particulas.py`:
-   - Select the TIFF file to be analyzed.
-   - The script will detect bright particles based on an automatically calculated threshold.
-   - Detected particle coordinates will be saved to a `centros.csv` file.
+1. Run the main script:
 
-2. Run the script `analise_intermitencia.py`:
-   - Select the same TIFF file.
-   - The script will use `centros.csv` to extract intensity over time for each particle.
-   - Filters will be applied, and plots will be saved for selected particles.
+```bash
+python main.py
+```
+
+2. A folder selection dialog will appear. Choose the directory containing your `.tif` files.
+
+3. For each `.tif` file, the program will:
+   - Move it to a new subfolder.
+   - Detect particles and save their coordinates in `centros.csv`.
+   - Analyze intermittency and save plots (`particulaN-xX-yY.png`).
 
 ## Output Files
 
-- `centros.csv`: contains X/Y coordinates of particles, intensity threshold, and average intensity.
-- `particulaX-xY-yZ.png`: intensity vs. time plots for filtered particles.
+- `centros.csv`: CSV file containing the detected particle positions (X, Y), threshold value, and average intensity.
+- `particulaN-xX-yY.png`: Plots of fluorescence intensity over time for each selected particle.
 
 ## License
 
-This project is licensed under the MIT License. Feel free to use, modify, and share it.
+This project is licensed under the MIT License. See the `LICENSE` file for details.
 
 ---
 

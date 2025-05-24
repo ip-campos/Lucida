@@ -1,4 +1,4 @@
-import tqdm
+from tqdm import tqdm
 import numpy as np
 
 # ---------------------------- Particle selection functions ---------------------------- #
@@ -80,3 +80,8 @@ def media_inten_adjacente(x, y, frame_array, n_vizinhos=8):
             intensidades.append(0)  # valor zero se fora da imagem
 
     return np.mean(intensidades)
+
+# ---------------------------- User input functions ---------------------------- #
+
+def get_tiff_file():
+    pass
