@@ -1,5 +1,7 @@
 from tqdm import tqdm
 import numpy as np
+from scipy.signal import find_peaks
+from scipy.stats import kurtosis
 
 # ---------------------------- Particle selection functions ---------------------------- #
 
@@ -19,30 +21,34 @@ def remover_adjacentes(lista_centros, raio=1):
 
 # ---------------------------- Particle selection functions ---------------------------- #
 
+def extrair_metricas(sinal):
+    sinal = np.array(sinal)
+    media = np.mean(sinal)
+    desvio = np.std(sinal)
+    variancia = np.var(sinal)
+    maximo = np.max(sinal)
+    mediana = np.median(sinal)
+    curt = kurtosis(sinal)
+    razao_max_mediana = maximo / mediana
+    picos, _ = find_peaks(sinal, height=mediana + 4 * desvio)
+    num_picos = len(picos)
 
-def filtro_linha_base(lista_intensidade_centros, intensidade_media, tolerancia=0.1):
-    """Filtra indices de particulas cuja media de intensidade esta proxima da media global."""
-    return [
-        i for i, centro in enumerate(lista_intensidade_centros)
-        if abs(np.mean(centro) - intensidade_media) / intensidade_media < tolerancia
-    ]
+    return {
+        "media": media,
+        "desvio": desvio,
+        "variancia": variancia,
+        "curtose": curt,
+        "razao_max_mediana": razao_max_mediana,
+        "num_picos": num_picos,
+    }
 
-
-def filtro_n_vezes(lista_intensidade_centros, limiar, n_vezes=5):
-    """Filtra indices de particulas que ultrapassam o limiar mais que n vezes."""
-    return [
-        i for i, centro in enumerate(lista_intensidade_centros)
-        if sum(valor > limiar for valor in lista_intensidade_centros[i]) > n_vezes
-    ]
-
-
-def filtro_std(lista_intensidade_centros, indices, limite_superior):
-    """Filtra indices de particulas com desvio padrao abaixo de um limite."""
-    return [
-        i for i in indices
-        if np.std(lista_intensidade_centros[i]) < limite_superior
-    ]
-
+def classificar(metricas):
+    return (
+        (metricas["media"] < 850) and
+        (metricas["razao_max_mediana"]>1.10) and
+        (metricas["curtose"] > 5) and
+        (metricas["num_picos"] > 5)
+    )
 
 def media_inten_adjacente(x, y, frame_array, n_vizinhos=8):
     """
