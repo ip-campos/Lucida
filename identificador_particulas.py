@@ -57,8 +57,6 @@ def identificar_particulas(path_arquivo):
     output_dir = path_imagem.parent
     output_dir.mkdir(parents=True, exist_ok=True)
     df = pd.DataFrame(centros, columns=["X", "Y"])
-    df["limiar"] = limiar
-    df["Intensidade media"] = intensidade_media
     df.to_csv(output_dir / "centros.csv", index=False)
 
     # Animação
