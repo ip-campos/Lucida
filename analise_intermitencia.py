@@ -13,7 +13,7 @@ def analisar_intermitencia(path_arquivo):
     # Escolha do arquivo TIFF
     imagem = Image.open(path_tiff)
     n_frames = imagem.n_frames
-    fps = 1/0.04
+    fps = 1/0.03
     tempo_medida = [i / fps for i in range(n_frames)]
 
     # Carrega o CSV com as coordenadas das particulas
@@ -33,28 +33,40 @@ def analisar_intermitencia(path_arquivo):
             intensidade = media_inten_adjacente(x, y, frame_array)
             intensidade_por_particula[idx].append(intensidade)
 
-    # ------------------------ Aplicacao de filtros ---------------------------- #
+    intensidades = pd.DataFrame(np.array(intensidade_por_particula).T)
 
-    media_geral = centros["Intensidade media"][0]
-    limiar = centros["limiar"][0]
+    # ------------------------ classificação de centros ---------------------------- #
+    
+    colunas_filtradas = []
+    for coluna in intensidades:
+        metricas = extrair_metricas(intensidades[coluna])
+        classificacao = classificar(metricas)
+        if classificacao:
+            colunas_filtradas.append(intensidades[coluna])
+    centros_intermitentes = pd.concat(colunas_filtradas, axis=1)
 
-    indices_filtrados = filtro_linha_base(
-        intensidade_por_particula, media_geral, tolerancia=0.1)
-    indices_filtrados = filtro_n_vezes(
-        intensidade_por_particula, limiar, n_vezes=5)
+    centros_intermitentes.to_csv(output_dir / "ictt.csv") # intermittent centers time trace 
 
-    # ---------------------------- Salvar graficos ------------------------------ #
-    output_dir.mkdir(parents=True, exist_ok=True)
-
-    for count, idx in enumerate(indices_filtrados):
-        intensidade = intensidade_por_particula[idx]
-        x = centros.loc[idx, "X"]
-        y = centros.loc[idx, "Y"]
-
+    # ------------------------ graficos time trace ---------------------------- #
+    for coluna in centros_intermitentes:
+        m = extrair_metricas(centros_intermitentes[coluna])
         fig, ax = plt.subplots()
-        ax.plot(tempo_medida, intensidade, linewidth=1)
-        ax.set_title(f"Particula {count} - Coord: ({x}, {y})")
+        ax.plot(tempo_medida, centros_intermitentes[coluna], linewidth=1)
+        ax.set_title(f"Particula {coluna} - Coord: ({centros["X"].iloc[coluna]}, {centros["Y"].iloc[coluna]})")
         ax.set_xlabel("Tempo (s)")
         ax.set_ylabel("Intensidade")
-        fig.savefig(output_dir / f"particula{count}-x{x}-y{y}.png")
+        ax.set_ylim(700, 1200)
+        ax.text(
+            0.95, 0.95,  # posição relativa (x, y) no sistema de coordenadas do eixo
+            f"media: {m["media"]:.2f}\ndesvio: {m["desvio"]:.2f}\nvariancia: {m["variancia"]:.2f}\ncurtose: {m["curtose"]:.2f}\nrmm: {m["razao_max_mediana"]:.2f}\nn_picos: {m["num_picos"]}",
+            transform=ax.transAxes,  # garante que a posição seja relativa (0 a 1)
+            fontsize=9,
+            verticalalignment='top',
+            horizontalalignment='right',
+            bbox=dict(boxstyle='round', facecolor='white', alpha=0.5)  # define a caixa
+        )
+        fig.savefig(output_dir / f"particula{coluna}.png")
         plt.close(fig)
+
+if __name__ == "__main__":
+    analisar_intermitencia(input("Path do arquivo: "))
