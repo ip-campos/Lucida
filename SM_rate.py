@@ -2,8 +2,8 @@ from utils import *
 import pandas as pd
 from pathlib import Path
 
-def calculate_SM_rate(path_arquivo, nome_arquivo, frate):
-    ictt_csv = path_arquivo.parent / "resultados" / "time_trace" / f"ictt_{nome_arquivo}.csv"
+def calculate_SM_rate(nome_arquivo, pasta_saida, frate):
+    ictt_csv = pasta_saida/ "time_trace" / f"ictt_{nome_arquivo}.csv"
     dados = pd.read_csv(ictt_csv, index_col=0)
     tempo = np.linspace(0, 2000*0.03, 2000)
     resultados_completos = []
@@ -32,7 +32,7 @@ def calculate_SM_rate(path_arquivo, nome_arquivo, frate):
 
     resultados_df = pd.DataFrame(resultados_completos)
 
-    output_dir = path_arquivo.parent / "resultados" / "smrate"
+    output_dir = pasta_saida / "smrate"
     output_dir.mkdir(parents=True, exist_ok=True)
     resultados_df.to_csv(output_dir/ f"smr_{nome_arquivo}.csv")
 

@@ -7,7 +7,7 @@ from tqdm import tqdm
 from pathlib import Path
 from utils import *
 
-def identificar_particulas(path_arquivo, nome_arquivo):
+def identificar_particulas(path_arquivo, nome_arquivo, pasta_saida):
     # Abre o arquivo TIFF
     path_imagem = Path(path_arquivo)
     imagem = Image.open(path_imagem)
@@ -54,7 +54,7 @@ def identificar_particulas(path_arquivo, nome_arquivo):
     centros = np.array(remover_adjacentes(centros, raio=1))
 
     # Salva os centros
-    output_dir = path_arquivo.parent / "resultados" / "centros"
+    output_dir = pasta_saida / "centros"
     output_dir.mkdir(parents=True, exist_ok=True)
     df = pd.DataFrame(centros, columns=["X", "Y"])
     df.to_csv(output_dir / f"centros_{nome_arquivo}.csv", index=False)

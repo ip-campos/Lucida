@@ -6,9 +6,9 @@ from pathlib import Path
 from tqdm import tqdm
 from utils import *
 
-def analisar_intermitencia(path_arquivo, nome_arquivo):
+def analisar_intermitencia(path_arquivo, nome_arquivo, pasta_saida):
     # ------------------------- Leitura dos arquivos --------------------------- #
-    output_dir = path_arquivo.parent / "resultados" / "time_trace"
+    output_dir = pasta_saida / "time_trace"
     output_dir.mkdir(parents=True, exist_ok=True)
     # Escolha do arquivo TIFF
     imagem = Image.open(path_arquivo)
@@ -17,7 +17,7 @@ def analisar_intermitencia(path_arquivo, nome_arquivo):
     tempo_medida = [i / fps for i in range(n_frames)]
 
     # Carrega o CSV com as coordenadas das particulas
-    path_centros = path_arquivo.parent / "resultados" / "centros" / f"centros_{nome_arquivo}.csv"
+    path_centros = pasta_saida/ "centros" / f"centros_{nome_arquivo}.csv"
     centros = pd.read_csv(path_centros)
 
     # Inicializa estrutura para armazenar intensidades por particula
