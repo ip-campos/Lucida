@@ -6,18 +6,18 @@ from pathlib import Path
 from tqdm import tqdm
 from utils import *
 
-def analisar_intermitencia(path_arquivo):
+def analisar_intermitencia(path_arquivo, nome_arquivo):
     # ------------------------- Leitura dos arquivos --------------------------- #
-    path_tiff = Path(path_arquivo)
-    output_dir = path_tiff.parent
+    output_dir = path_arquivo.parent / "resultados" / "time_trace"
+    output_dir.mkdir(parents=True, exist_ok=True)
     # Escolha do arquivo TIFF
-    imagem = Image.open(path_tiff)
+    imagem = Image.open(path_arquivo)
     n_frames = imagem.n_frames
     fps = 1/0.03
     tempo_medida = [i / fps for i in range(n_frames)]
 
     # Carrega o CSV com as coordenadas das particulas
-    path_centros = output_dir / "centros.csv"
+    path_centros = path_arquivo.parent / "resultados" / "centros" / f"centros_{nome_arquivo}.csv"
     centros = pd.read_csv(path_centros)
 
     # Inicializa estrutura para armazenar intensidades por particula
@@ -45,9 +45,14 @@ def analisar_intermitencia(path_arquivo):
             colunas_filtradas.append(intensidades[coluna])
     centros_intermitentes = pd.concat(colunas_filtradas, axis=1)
 
-    centros_intermitentes.to_csv(output_dir / "ictt.csv") # intermittent centers time trace 
+    centros_intermitentes.to_csv(output_dir / f"ictt_{nome_arquivo}.csv") # intermittent centers time trace 
 
     # ------------------------ graficos time trace ---------------------------- #
+    output_dir_graficos = output_dir / f"{nome_arquivo}"
+    output_dir_graficos.mkdir(parents=True, exist_ok=True)
+
+    limite_inf = centros_intermitentes.to_numpy().mean() - 50
+    limite_sup = centros_intermitentes.to_numpy().max() + 50
     for coluna in centros_intermitentes:
         m = extrair_metricas(centros_intermitentes[coluna])
         fig, ax = plt.subplots()
@@ -55,7 +60,7 @@ def analisar_intermitencia(path_arquivo):
         ax.set_title(f"Particula {coluna} - Coord: ({centros["X"].iloc[coluna]}, {centros["Y"].iloc[coluna]})")
         ax.set_xlabel("Tempo (s)")
         ax.set_ylabel("Intensidade")
-        ax.set_ylim(700, 1200)
+        ax.set_ylim(limite_inf, limite_sup)
         ax.text(
             0.95, 0.95,  # posição relativa (x, y) no sistema de coordenadas do eixo
             f"media: {m["media"]:.2f}\ndesvio: {m["desvio"]:.2f}\nvariancia: {m["variancia"]:.2f}\ncurtose: {m["curtose"]:.2f}\nrmm: {m["razao_max_mediana"]:.2f}\nn_picos: {m["num_picos"]}",
@@ -65,7 +70,7 @@ def analisar_intermitencia(path_arquivo):
             horizontalalignment='right',
             bbox=dict(boxstyle='round', facecolor='white', alpha=0.5)  # define a caixa
         )
-        fig.savefig(output_dir / f"particula{coluna}.png")
+        fig.savefig(output_dir_graficos / f"particula{coluna}.png")
         plt.close(fig)
 
 if __name__ == "__main__":
